@@ -1,0 +1,94 @@
+-- MongoDB has no opinions on what types of data belongs in a document, 
+    and therefore data validation needs to be done in the app.
+
+-- MongoDB does not handle relationships and this means that an app using MongoDB
+    would need its own logic to fetch related documents.
+
+-- Mongoose - an Object data modeling - ODM library
+    -- provide - data validation & relationships between MongoDB documents
+    -- an more..
+
+-- mongoose.model 
+    -- model name
+    -- schema object - A schema maps to a collection and it defines the shape
+    of documents within that collection.
+    -- mongoose.model('Product', {}) - tell which collection in MongoDB to use
+    and it controls what kinds of properties documents in that collection should be.
+
+********* Mongoose Model Methods ********************************
+const Product = db.model('Product', {
+    _id: {type: String, defautl: cuid},
+    description: String,
+    imgThumb: String,
+    img: String,
+    link: String,
+    userId: String,
+    userName: String,
+    userLink: String,
+    tags: {type: [String], index: true}
+});
+
+-- functions:
+    -- await  *new* Product(fields).save()
+    -- await Product.find(query)
+        .sort({ _id: 1 }) - return in the order of their creation.
+    -- await Product.findById(_id)
+    -- await Product.deleteOne({_id: _id})
+
+****************** Validation *********************************
+-- The property that is not in schema - would not persist to database.
+
+-- mongoose accepts arbitrary validation functions: 
+{
+    userLink: {
+        type: String,
+        validate:{
+            validator: isURL -- any function for validation -- return boolean
+            message: props => `${props.value} is not a valid URL` -- if validation is failed -> mongoose generates error with the message for us.
+        } 
+    }
+}
+
+************************** Relationship ****************************
+const Order = db.model('Order', {
+    _id: {type: String, default: cuid},
+    buyersEmail: emailSchema({required: true}),
+    products: [
+        {
+            type: String,
+           ** ref: 'Product', **
+            index: true,
+            required: true
+        }
+    ],
+    status: {
+        type: String,
+        index: true,
+        default: 'CREATED',
+        enum: ['CREATED', 'PENDING', 'COMPLETED']
+    }
+});
+
+-- 1) we ensure valid emails in a similar fashion to how we treated URLs
+    in the previous section,
+-- 2) we’ve added a status field that can only be one of CREATED , PENDING ,
+    or COMPLETED . The **enum option is a convenient helper for **restricting a field** 
+    to particular values.
+
+{
+    type: String,
+    ** ref: 'Product', **
+    index: true,
+    required: true
+}
+--> the product is presented as a string and it is _id of that product
+    -- mongoose is able to make the connection and convert these strings to
+    full objects.
+
+    const order = await Order.findById(_id)
+                    .populate('products')
+                    .exec(); 
+    --> use populate().exec() on the query.
+    But use execPopulate
+    --  const order = await new Order(fields).save();  
+         await order.populate('products').execPopulate(); -> on document.

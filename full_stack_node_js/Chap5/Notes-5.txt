@@ -1,0 +1,6 @@
+************** Authentication with 'passport'****************
+-- Passport supports many different authentication strategies including
+    username and password, Facebook, Twitter and more.
+-- passport module - overall framework for authentication
+    --> use additional strategy modules - passport-local strategy module.
+    

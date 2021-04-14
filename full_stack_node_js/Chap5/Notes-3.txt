@@ -1,0 +1,69 @@
+-- any web client can access our API - not only clients hosts by our API
+
+--> modify our server to return the correct headers - send necessary CORS header 
+
+-- express can parse query parameters for us
+-- async function getProduct(req, res, next) {}
+        --next(): a callback that signifies that the `next` available handler should be run.
+        -- by default: next() will trigger the default 'not found' handler built in express.
+
+-- /products/:id  - express will make whatever is in the place of :id available 
+        to our route handler on the req.params.id property.
+
+****************************** Next and Middleware ******************
+-- request handlers include both route handlers and middleware functions.
+-- next() function is provided to 'request handler' - allow our functions
+      to pass control of request and response objects to other handlers in the series.  
+-- series of handlers defined by the order that we call in our app
+example:
+ -- app.use(middleware.cors) 
+        app.get('/', route_handler)
+-- middleware.cors always run before route_handler run.
+        -- next() is called ( in  middleware.cors) so that the route_handler has a chance to run if the path is matched.
+
+-- middleware -- just like route handler except that they match all HTTP methods.
+-- route handlers are also passed the next() functon as their third argument.
+
+-- What happen if route handler call next()?
+  -- middleware for error handling - 
+        -- create an error handler middleware function 
+                by defining it with **extra first argument** to receive the error
+        next( with_an_argument ) -> the next available error handler middleware function
+        will be called.
+
+        error handler middleware function definition:
+                function handleError(** err **, req, res, next) {..}
+ -- call next(err)?
+ --> in route handler if there is any error -> return next(err)
+        -- 1. stop further process.
+        -- 2. next(err) invoked --> calls handleError(err, req, res, next) 
+        -- often use for internal error - database connection, read files...
+-- call next() - without any argument -> trigger built-in express errorHandler
+        -- response html page with header set to 404 - ** notFound(req, res) ** normal middleware function
+        --> we can modify that error response.
+        
+        logic of middlewares - presented by their orders:
+        app.use(middleware.cors);
+        app.get('/products', api.listProducts);
+        app.get('/products/:id', api.getProduct);
+        app.use(middleware.handleError);
+        app.use(middleware.notFound);
+
+        1. middleware.cors function always run first.
+        2. request match against two route handlers.
+        3. if no route match --> middleware.notFound() function runs.
+        4. while route handler is running, if there is an error -> next(err) is called 
+        middleware.handleError() is invoked.
+
+        -- Calls to next() and next(err) indicate that the current handler is complete 
+        and in what state. And next(err) will skip all remaining handlers in the chain
+        except for those that are set up to handle errors as described above.
+
+******************************************************
+******************* HTTP POST, PUT, DELETE ***********
+-- GET requests are simple and are the most common, but they limit the information that a client can send to an API.
+        -- GET request - only information transferred is the URL path, host and request headers.
+        -- GET requests - not supposed to have any permanent effect on the server.
+-- POST can contain a request body - can be any type of data.
+-- express doesn't parse request bodies for us automatically-we parse it after the transfer finished - read data from the request stream manually.
+        --> use the express middleware - body-parser - the recommended middleware.
